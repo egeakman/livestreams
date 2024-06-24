@@ -1,0 +1,19 @@
+- name: Deploy livestream links to the server
+  hosts: inventory
+  become: yes
+
+  vars:
+    repository: git@github.com:egeakman/livestreams.git
+
+  tasks:
+    - name: Clone the repository
+      git:
+        repo: "{{ repository }}"
+        dest: /etc/EuroPython/livestreams
+        depth: 1
+        force: yes
+        update: yes
+        accept_hostkey: yes
+        single_branch: yes
+        version: main
+        key_file: /root/.ssh/deploy_key
