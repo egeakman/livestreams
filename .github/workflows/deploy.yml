@@ -1,0 +1,31 @@
+name: Deploy to server
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.ANSIBLE_DEPLOY_SSH_KEY }}
+
+    - name: Install Ansible
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i inventory.ini playbook.yml --user=root
+      env:
+        ANSIBLE_HOST_KEY_CHECKING: "false"
