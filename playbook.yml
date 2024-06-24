@@ -3,17 +3,37 @@
   become: yes
 
   vars:
-    repository: git@github.com:egeakman/livestreams.git
+    repository_url: git@github.com:egeakman/livestreams.git
+    repository_version: main
+    dest_clone_path: /etc/EuroPython/livestreams
+    deploy_key_path: /root/.ssh/deploy_key
 
   tasks:
+    - name: Ensure the deploy key file exists
+      stat:
+        path: "{{ deploy_key_path }}"
+      register: deploy_key
+
+    - name: Fail if deploy key does not exist
+      fail:
+        msg: "The deploy key file does not exist at {{ deploy_key_path }}."
+      when: not deploy_key.stat.exists
+
     - name: Clone the repository
       git:
-        repo: "{{ repository }}"
-        dest: /etc/EuroPython/livestreams
+        repo: "{{ repository_url }}"
+        dest: "{{ dest_clone_path }}"
         depth: 1
         force: yes
         update: yes
         accept_hostkey: yes
         single_branch: yes
-        version: main
-        key_file: /root/.ssh/deploy_key
+        version: "{{ repository_version }}"
+        key_file: "{{ deploy_key_path }}"
+
+    - name: Set up cron job to update repository
+      ansible.builtin.cron:
+        name: "Update the repository every 15 minutes"
+        minute: "*/15"
+        job: "GIT_SSH_COMMAND='ssh -i {{ deploy_key_path }}' git -C {{ dest_clone_path }} pull"
+        state: present
